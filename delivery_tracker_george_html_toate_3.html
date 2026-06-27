@@ -345,6 +345,7 @@
                     <span class="p-1.5 bg-amber-500/10 text-amber-400 rounded-lg">⚡</span>
                     Înregistrează Tranzacție Cash
                     <span id="ca-today-date" class="text-[10px] text-slate-500 font-normal ml-auto"></span>
+                    <button onclick="resetCaInputuri()" class="text-[10px] bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 px-2.5 py-1.5 rounded-lg border border-slate-700 hover:border-rose-500/30 cursor-pointer font-semibold transition" title="Șterge toate câmpurile">🗑️ Reset</button>
                 </h3>
 
                 <!-- Primit de la client -->
@@ -506,6 +507,19 @@
         // caData[platform][date] = { tranzactii: [], soldApp: 0, soldMeu: 0 }
         let caData = { bolt: {}, wolt: {}, glovo: {} };
 
+        // Load caData from localStorage immediately on startup (before Firebase)
+        (function() {
+            try {
+                const raw = localStorage.getItem('george_caData_v1');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    ['bolt', 'wolt', 'glovo'].forEach(plat => {
+                        if (parsed[plat]) caData[plat] = parsed[plat];
+                    });
+                }
+            } catch(e) {}
+        })();
+
         // ===== INIT =====
         window.onload = function() {
             const waitForFirebase = setInterval(() => {
@@ -532,11 +546,17 @@
                 });
             });
             window._fbListen('george/taxSettings', (val) => { if (val) taxSettings = val; });
-            // Sync cash app data
+            // Sync cash app data - Firebase overrides localStorage when available
             ['bolt', 'wolt', 'glovo'].forEach(plat => {
                 window._fbListen(`george/${plat}/caData`, (val) => {
-                    caData[plat] = val || {};
-                    if (firebaseReady && activeTab === 'cash-app' && plat === activePlatform) renderCaIstoric();
+                    if (val) {
+                        caData[plat] = val;
+                        saveCaLocal(); // keep localStorage in sync with Firebase
+                    }
+                    if (firebaseReady && activeTab === 'cash-app' && plat === activePlatform) {
+                        renderCaIstoric();
+                        updateCaSolduri();
+                    }
                 });
             });
         }
@@ -1123,7 +1143,33 @@
 
         // ===== CASH APP FUNCTIONS =====
 
+        // ===== CASH APP PERSISTENCE (localStorage backup) =====
+        const CA_STORAGE_KEY = 'george_caData_v1';
+
+        function saveCaLocal() {
+            try {
+                localStorage.setItem(CA_STORAGE_KEY, JSON.stringify(caData));
+            } catch(e) { /* ignore */ }
+        }
+
+        function loadCaLocal() {
+            try {
+                const raw = localStorage.getItem(CA_STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    // Merge local data into caData (Firebase overrides when available)
+                    ['bolt', 'wolt', 'glovo'].forEach(plat => {
+                        if (parsed[plat]) {
+                            caData[plat] = Object.assign({}, parsed[plat], caData[plat]);
+                        }
+                    });
+                }
+            } catch(e) { /* ignore */ }
+        }
+
         function initCashApp() {
+            // Load from localStorage first (instant, before Firebase)
+            loadCaLocal();
             const todayStr = getTodayDateString();
             const d = new Date(todayStr);
             const formatted = d.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1146,6 +1192,18 @@
         function saveCaToFirebase() {
             if (!window._fbSet) return;
             window._fbSet(`george/${activePlatform}/caData`, caData[activePlatform]);
+            // Also save to localStorage as backup
+            saveCaLocal();
+        }
+
+        function resetCaInputuri() {
+            document.getElementById('ca-input-primit').value = '';
+            document.getElementById('ca-input-valoare-comanda').value = '';
+            document.getElementById('ca-input-platit').value = '';
+            document.getElementById('ca-input-depus').value = '';
+            const box = document.getElementById('ca-diferenta-box');
+            if (box) box.classList.add('hidden');
+            showToast('Câmpuri șterse.');
         }
 
         function calcDiferenta() {
@@ -1346,6 +1404,7 @@
             });
             todayData.soldApp = sold;
             saveCaToFirebase();
+            saveCaLocal();
             renderCaIstoric();
             updateCaSolduri();
             updateDashCashApp();
