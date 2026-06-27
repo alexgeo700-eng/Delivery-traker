@@ -48,7 +48,8 @@
                     <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse" id="api-indicator"></span>
                     <span id="api-status-text">AI Dezactivat</span>
                 </button>
-                <button onclick="openModal('settings-modal')" class="p-2 text-slate-400 hover:text-slate-200 bg-slate-800 rounded-lg border border-slate-700/50 transition cursor-pointer">⚙️</button>
+                <button onclick="openModal('settings-modal')" class="p-2 text-slate-400 hover:text-slate-200 bg-slate-800 rounded-lg border border-slate-700/50 transition cursor-pointer" title="Setări">⚙️</button>
+                <button onclick="forceRefreshPwa()" class="p-2 text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 rounded-lg border border-emerald-500/20 transition cursor-pointer" title="Actualizează aplicația">🔄</button>
             </div>
         </div>
 
@@ -178,26 +179,6 @@
                 </div>
             </div>
 
-            <!-- Raport EOD -->
-            <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2"><span class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">📋</span>Raport de Încheiere Zi (EOD George)</h3>
-                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Zilnic</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div><label class="block text-[11px] text-slate-400 mb-1 font-semibold">Cash START tura</label><input type="number" id="eod-cash-start" placeholder="Ex: 50" class="w-full bg-slate-950 border border-slate-700/60 rounded-xl p-2.5 text-xs text-white"></div>
-                    <div><label class="block text-[11px] text-slate-400 mb-1 font-semibold">Cash END tura</label><input type="number" id="eod-cash-end" placeholder="Ex: 230" class="w-full bg-slate-950 border border-slate-700/60 rounded-xl p-2.5 text-xs text-white"></div>
-                    <div class="flex items-end"><button onclick="calculateEodReport()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold py-2.5 px-4 rounded-xl transition cursor-pointer">Generează Raportul Zilei</button></div>
-                </div>
-                <div id="eod-report-result" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-bold text-slate-300">Rezultat Bilanț Seară</span>
-                        <button onclick="copyEodToClipboard()" class="text-[10px] bg-slate-850 hover:bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700 transition cursor-pointer">📋 Copiază Raport Text</button>
-                    </div>
-                    <div id="eod-text-summary" class="text-xs space-y-1.5 text-slate-300"></div>
-                </div>
-            </div>
-
             <!-- Cash App Summary in Dashboard -->
             <div class="bg-slate-900 border border-amber-500/20 p-5 rounded-3xl space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -272,7 +253,7 @@
                 </div>
                 <form id="day-form" onsubmit="saveDayEntry(event)" class="p-6 space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="block text-xs text-slate-400 mb-1.5 font-semibold">Data tura</label><input type="date" id="input-date" required class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1.5 font-semibold">Data tura</label><input type="date" id="input-date" required class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition" onfocus="this.showPicker && this.showPicker()"></div>
                         <div><label class="block text-xs text-slate-400 mb-1.5 font-semibold">Livrări efectuate</label><input type="number" id="input-deliveries" min="0" required class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition"></div>
                         <div><label class="block text-xs text-slate-400 mb-1.5 font-semibold">Distanță parcursă (km)</label><input type="number" step="0.01" id="input-distance" min="0" required placeholder="Ex: 50.00" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition"></div>
                     </div>
@@ -312,7 +293,25 @@
                     <h2 class="text-md font-bold text-slate-200">Istoric Livrări</h2>
                     <p class="text-xs text-slate-400">Grupate automat pe săptămâni calendaristice</p>
                 </div>
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <label for="history-filter-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Filtrare</label>
+                    <select id="history-filter-select" onchange="applyHistoryFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="all">Toate zilele</option>
+                        <option value="week">Săptămâna selectată</option>
+                        <option value="month">Luna curentă</option>
+                    </select>
+                    <label for="history-week-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Săptămână</label>
+                    <select id="history-week-select" onchange="applyHistoryFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="all">Toate săptămânile</option>
+                    </select>
+                    <label for="history-month-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Lună</label>
+                    <select id="history-month-select" onchange="applyHistoryFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="current">Luna curentă</option>
+                    </select>
+                    <label for="history-year-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">An</label>
+                    <select id="history-year-select" onchange="applyHistoryFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="current">Anul curent</option>
+                    </select>
                     <button onclick="exportToCSV()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-lg transition cursor-pointer flex items-center gap-1.5 border border-emerald-500/20">📊 Export CSV</button>
                     <button onclick="exportData()" class="bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-700 font-semibold transition cursor-pointer">📥 Export JSON</button>
                     <button onclick="document.getElementById('import-file-input').click()" class="bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-700 font-semibold transition cursor-pointer">📤 Import JSON</button>
@@ -421,10 +420,32 @@
 
             <!-- Istoric tranzacții azi -->
             <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-3">
-                <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-3">
-                    <span class="p-1.5 bg-slate-700 text-slate-300 rounded-lg">📝</span>
-                    Tranzacții Cash de Azi
-                </h3>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <span class="p-1.5 bg-slate-700 text-slate-300 rounded-lg">📝</span>
+                        Tranzacții Cash
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label for="cash-filter-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Filtrare</label>
+                        <select id="cash-filter-select" onchange="applyCashFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer">
+                            <option value="all">Toate zilele</option>
+                            <option value="week">Săptămâna selectată</option>
+                            <option value="month">Luna curentă</option>
+                        </select>
+                        <label for="cash-week-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Săptămână</label>
+                        <select id="cash-week-select" onchange="applyCashFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer">
+                            <option value="all">Toate săptămânile</option>
+                        </select>
+                        <label for="cash-month-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Lună</label>
+                        <select id="cash-month-select" onchange="applyCashFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer">
+                            <option value="current">Luna curentă</option>
+                        </select>
+                        <label for="cash-year-select" class="text-[11px] uppercase tracking-[0.2em] text-slate-400">An</label>
+                        <select id="cash-year-select" onchange="applyCashFilter()" class="bg-slate-950 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer">
+                            <option value="current">Anul curent</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="ca-istoric-list" class="space-y-2">
                     <p class="text-xs text-slate-500 text-center py-4">Nicio tranzacție înregistrată azi.</p>
                 </div>
@@ -499,16 +520,46 @@
         let editTargetDate = null;
         let activeAddMode = 'manual';
         let quickAddType = null;
+        let historyFilterMode = 'all';
+        let cashAppFilterMode = 'all';
+        let historySelectedWeek = 'all';
+        let cashSelectedWeek = 'all';
+        let historySelectedMonth = 'current';
+        let cashSelectedMonth = 'current';
+        let historySelectedYear = 'current';
+        let cashSelectedYear = 'current';
         let ocrParsedData = null;
         let firebaseReady = false;
         let loadedPlatforms = 0;
+        let appInitialized = false;
+        const STORAGE_KEYS = {
+            entries: 'george_tracker_entries_v2',
+            taxSettings: 'george_tracker_tax_settings_v2'
+        };
 
         // ===== CASH APP STATE =====
         // caData[platform][date] = { tranzactii: [], soldApp: 0, soldMeu: 0 }
         let caData = { bolt: {}, wolt: {}, glovo: {} };
 
-        // Load caData from localStorage immediately on startup (before Firebase)
-        (function() {
+        function loadPersistedData() {
+            try {
+                const rawEntries = localStorage.getItem(STORAGE_KEYS.entries);
+                if (rawEntries) {
+                    const parsedEntries = JSON.parse(rawEntries);
+                    ['bolt', 'wolt', 'glovo'].forEach(plat => {
+                        if (parsedEntries[plat]) allEntries[plat] = parsedEntries[plat];
+                    });
+                }
+            } catch(e) {}
+
+            try {
+                const rawTax = localStorage.getItem(STORAGE_KEYS.taxSettings);
+                if (rawTax) {
+                    const parsedTax = JSON.parse(rawTax);
+                    if (parsedTax) taxSettings = parsedTax;
+                }
+            } catch(e) {}
+
             try {
                 const raw = localStorage.getItem('george_caData_v1');
                 if (raw) {
@@ -518,16 +569,27 @@
                     });
                 }
             } catch(e) {}
-        })();
+        }
+
+        loadPersistedData();
 
         // ===== INIT =====
         window.onload = function() {
+            loadPersistedData();
             const waitForFirebase = setInterval(() => {
                 if (window._fbListen) {
                     clearInterval(waitForFirebase);
                     startFirebaseSync();
                 }
-            }, 100);
+            }, 200);
+
+            setTimeout(() => {
+                if (!appInitialized) {
+                    clearInterval(waitForFirebase);
+                    firebaseReady = true;
+                    initApp();
+                }
+            }, 2000);
         };
 
         function startFirebaseSync() {
@@ -550,7 +612,8 @@
             ['bolt', 'wolt', 'glovo'].forEach(plat => {
                 window._fbListen(`george/${plat}/caData`, (val) => {
                     if (val) {
-                        caData[plat] = val;
+                        const normalized = normalizeCaDataShape({ [plat]: val });
+                        caData[plat] = normalized[plat];
                         saveCaLocal(); // keep localStorage in sync with Firebase
                     }
                     if (firebaseReady && activeTab === 'cash-app' && plat === activePlatform) {
@@ -562,12 +625,16 @@
         }
 
         function initApp() {
+            if (appInitialized) return;
+            appInitialized = true;
             updateApiIndicator();
             switchPlatform('bolt');
             const todayStr = getTodayDateString();
             const formattedToday = new Date(todayStr).toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
-            document.getElementById('quick-today-date').innerText = `(${formattedToday})`;
-            document.getElementById('input-date').value = todayStr;
+            const quickTodayDateEl = document.getElementById('quick-today-date');
+            if (quickTodayDateEl) quickTodayDateEl.innerText = `(${formattedToday})`;
+            const inputDateEl = document.getElementById('input-date');
+            if (inputDateEl) inputDateEl.value = todayStr;
         }
 
         // ===== PLATFORM SWITCHER =====
@@ -578,11 +645,16 @@
             // Update header
             document.getElementById('header-platform-name').innerText = p.name;
             document.getElementById('header-icon').innerText = p.emoji;
-            document.getElementById('dash-debt-label').innerText = p.debtLabel;
-            document.getElementById('dash-revenue-label').innerText = `Venit Brut ${p.name} (cu Tips Card)`;
-            document.getElementById('dash-tips-app-label').innerText = `În aplicație (${p.name}):`;
-            document.getElementById('form-platform-subtitle').innerText = `Platformă activă: ${p.emoji} ${p.name}`;
-            document.getElementById('form-app-section-title').innerText = `Date din Aplicația ${p.name}`;
+            const debtLabelEl = document.getElementById('dash-debt-label');
+            if (debtLabelEl) debtLabelEl.innerText = p.debtLabel;
+            const revenueLabelEl = document.getElementById('dash-revenue-label');
+            if (revenueLabelEl) revenueLabelEl.innerText = `Venit Brut ${p.name} (cu Tips Card)`;
+            const tipsAppLabelEl = document.getElementById('dash-tips-app-label');
+            if (tipsAppLabelEl) tipsAppLabelEl.innerText = `În aplicație (${p.name}):`;
+            const platformSubtitleEl = document.getElementById('form-platform-subtitle');
+            if (platformSubtitleEl) platformSubtitleEl.innerText = `Platformă activă: ${p.emoji} ${p.name}`;
+            const appSectionTitleEl = document.getElementById('form-app-section-title');
+            if (appSectionTitleEl) appSectionTitleEl.innerText = `Date din Aplicația ${p.name}`;
 
             // Update platform buttons
             ['bolt', 'wolt', 'glovo'].forEach(pl => {
@@ -597,19 +669,34 @@
             populateWeekSelectors();
             if (activeTab === 'dashboard') renderDashboard();
             if (activeTab === 'history') renderHistory();
+            if (activeTab === 'cash-app') {
+                renderCaIstoric();
+                updateCaSolduri();
+                updateDashCashApp();
+            }
         }
 
         // Shortcut to get current platform's entries
-        function entries() { return allEntries[activePlatform]; }
+        function entries() {
+            if (!allEntries[activePlatform]) allEntries[activePlatform] = [];
+            return allEntries[activePlatform];
+        }
 
         function saveToFirebase() {
             if (!window._fbSet) return;
             const entriesObj = {};
-            allEntries[activePlatform].forEach(e => { entriesObj[e.date.replace(/-/g, '_')] = e; });
+            entries().forEach(e => { entriesObj[e.date.replace(/-/g, '_')] = e; });
             window._fbSet(`george/${activePlatform}/entries`, entriesObj);
             window._fbSet('george/taxSettings', taxSettings);
         }
-        function saveToLocalStorage() { saveToFirebase(); }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(allEntries));
+                localStorage.setItem(STORAGE_KEYS.taxSettings, JSON.stringify(taxSettings));
+            } catch (e) {}
+            saveToFirebase();
+        }
 
         // ===== HELPERS =====
         function getTodayDateString() {
@@ -684,6 +771,84 @@
             }
         }
 
+        // ===== TIME FILTER HELPERS =====
+        function getDateValue(dateStr) {
+            return new Date(`${dateStr}T00:00:00`);
+        }
+
+        function matchesTimeFilter(dateStr, filterMode, selectedWeek = 'all', selectedMonth = 'current', selectedYear = 'current') {
+            if (!dateStr) return false;
+            const targetDate = getDateValue(dateStr);
+            const todayDate = getDateValue(getTodayDateString());
+            if (filterMode === 'week') {
+                if (selectedWeek && selectedWeek !== 'all') {
+                    return getWeekLabelAndId(dateStr).id === selectedWeek;
+                }
+                return getWeekLabelAndId(dateStr).id === getWeekLabelAndId(getTodayDateString()).id;
+            }
+            if (filterMode === 'month') {
+                const yearMatches = selectedYear && selectedYear !== 'all' && selectedYear !== 'current'
+                    ? targetDate.getFullYear() === Number(selectedYear)
+                    : targetDate.getFullYear() === todayDate.getFullYear();
+                if (selectedMonth && selectedMonth !== 'all' && selectedMonth !== 'current') {
+                    const [year, month] = selectedMonth.split('-').map(Number);
+                    return yearMatches && targetDate.getFullYear() === year && targetDate.getMonth() === month - 1;
+                }
+                return yearMatches && targetDate.getMonth() === todayDate.getMonth();
+            }
+            return true;
+        }
+
+        function populateWeekFilterOptions(selectId, selectedValue, sourceEntries) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const weeksMap = {};
+            sourceEntries.forEach(entry => {
+                const info = getWeekLabelAndId(entry.date);
+                if (!weeksMap[info.id]) weeksMap[info.id] = info;
+            });
+            const currentInfo = getWeekLabelAndId(getTodayDateString());
+            if (!weeksMap[currentInfo.id]) weeksMap[currentInfo.id] = currentInfo;
+            const prevValue = selectedValue || select.value || 'all';
+            select.innerHTML = '<option value="all">Toate săptămânile</option>';
+            Object.keys(weeksMap).sort((a,b) => b.localeCompare(a)).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = `${weeksMap[key].label} [${weeksMap[key].range}]`;
+                select.appendChild(opt);
+            });
+            if (prevValue && select.querySelector(`option[value="${prevValue}"]`)) {
+                select.value = prevValue;
+            } else {
+                select.value = 'all';
+            }
+        }
+
+        function applyHistoryFilter() {
+            const select = document.getElementById('history-filter-select');
+            const weekSelect = document.getElementById('history-week-select');
+            const monthSelect = document.getElementById('history-month-select');
+            const yearSelect = document.getElementById('history-year-select');
+            if (select) historyFilterMode = select.value;
+            if (weekSelect) historySelectedWeek = weekSelect.value;
+            if (monthSelect) historySelectedMonth = monthSelect.value;
+            if (yearSelect) historySelectedYear = yearSelect.value;
+            renderHistory();
+        }
+
+        function applyCashFilter() {
+            const select = document.getElementById('cash-filter-select');
+            const weekSelect = document.getElementById('cash-week-select');
+            const monthSelect = document.getElementById('cash-month-select');
+            const yearSelect = document.getElementById('cash-year-select');
+            if (select) cashAppFilterMode = select.value;
+            if (weekSelect) cashSelectedWeek = weekSelect.value;
+            if (monthSelect) cashSelectedMonth = monthSelect.value;
+            if (yearSelect) cashSelectedYear = yearSelect.value;
+            renderCaIstoric();
+            updateCaSolduri();
+        }
+
         // ===== WEEK HELPERS =====
         function getWeekLabelAndId(dateStr) {
             const d = new Date(dateStr);
@@ -723,6 +888,69 @@
                 select.appendChild(opt);
             });
             if (prevValue && select.querySelector(`option[value="${prevValue}"]`)) select.value = prevValue;
+        }
+
+        function getMonthLabelAndId(dateStr) {
+            const d = new Date(dateStr);
+            const monthNames = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+            const year = d.getFullYear();
+            const monthIndex = d.getMonth();
+            return {
+                id: `${year}-${String(monthIndex + 1).padStart(2, '0')}`,
+                label: `${monthNames[monthIndex]} ${year}`
+            };
+        }
+
+        function populateMonthFilterOptions(selectId, selectedValue, sourceEntries, dateAccessor = entry => entry.date) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const monthsMap = {};
+            sourceEntries.forEach(entry => {
+                const dateStr = dateAccessor(entry);
+                if (!dateStr) return;
+                const info = getMonthLabelAndId(dateStr);
+                if (!monthsMap[info.id]) monthsMap[info.id] = info;
+            });
+            const currentInfo = getMonthLabelAndId(getTodayDateString());
+            if (!monthsMap[currentInfo.id]) monthsMap[currentInfo.id] = currentInfo;
+            const prevValue = selectedValue || select.value || 'current';
+            select.innerHTML = '<option value="current">Luna curentă</option>';
+            Object.keys(monthsMap).sort((a,b) => b.localeCompare(a)).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = monthsMap[key].label;
+                select.appendChild(opt);
+            });
+            if (prevValue && select.querySelector(`option[value="${prevValue}"]`)) {
+                select.value = prevValue;
+            } else {
+                select.value = 'current';
+            }
+        }
+
+        function populateYearFilterOptions(selectId, selectedValue, sourceEntries, dateAccessor = entry => entry.date) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const yearsSet = new Set();
+            sourceEntries.forEach(entry => {
+                const dateStr = dateAccessor(entry);
+                if (!dateStr) return;
+                yearsSet.add(String(new Date(dateStr).getFullYear()));
+            });
+            yearsSet.add(String(new Date(getTodayDateString()).getFullYear()));
+            const prevValue = selectedValue || select.value || 'current';
+            select.innerHTML = '<option value="current">Anul curent</option>';
+            Array.from(yearsSet).sort((a, b) => Number(b) - Number(a)).forEach(year => {
+                const opt = document.createElement('option');
+                opt.value = year;
+                opt.innerText = year;
+                select.appendChild(opt);
+            });
+            if (prevValue && select.querySelector(`option[value="${prevValue}"]`)) {
+                select.value = prevValue;
+            } else {
+                select.value = 'current';
+            }
         }
 
         // ===== DASHBOARD =====
@@ -894,7 +1122,8 @@
         function resetForm() {
             document.getElementById('day-form').reset();
             document.getElementById('input-date').value = getTodayDateString();
-            document.getElementById('live-analysis-box').className = "hidden";
+            const liveAnalysisBox = document.getElementById('live-analysis-box');
+            if (liveAnalysisBox) liveAnalysisBox.className = "hidden";
         }
 
         function saveDayEntry(e) {
@@ -905,8 +1134,6 @@
             const revenue = parseFloat(document.getElementById('input-revenue').value) || 0;
             const tipApp = parseFloat(document.getElementById('input-tip-app').value) || 0;
 
-            const cashStart = parseFloat(document.getElementById('input-cash-start').value) || 0;
-            const cashEnd = parseFloat(document.getElementById('input-cash-end').value) || 0;
             const fuel = parseFloat(document.getElementById('input-expense-fuel').value) || 0;
             const bus = parseFloat(document.getElementById('input-expense-bus').value) || 0;
             const food = parseFloat(document.getElementById('input-expense-food').value) || 0;
@@ -915,7 +1142,7 @@
 
             const manualTipCash = parseFloat(document.getElementById('input-tip-cash').value) || 0;
 
-            const newEntry = { date, deliveries, distance, revenue, tipApp, tipCash: manualTipCash, cashStart, cashEnd, expenses: { fuel, bus, food, others }, notes };
+            const newEntry = { date, deliveries, distance, revenue, tipApp, tipCash: manualTipCash, expenses: { fuel, bus, food, others }, notes };
             allEntries[activePlatform] = allEntries[activePlatform].filter(item => item.date !== date);
             allEntries[activePlatform].push(newEntry);
 
@@ -933,14 +1160,22 @@
         // ===== HISTORY =====
         function renderHistory() {
             const listContainer = document.getElementById('history-weeks-list');
+            const filterSelect = document.getElementById('history-filter-select');
+            if (filterSelect) {
+                filterSelect.value = historyFilterMode;
+            }
+            populateWeekFilterOptions('history-week-select', historySelectedWeek, entries());
+            populateMonthFilterOptions('history-month-select', historySelectedMonth, entries());
+            populateYearFilterOptions('history-year-select', historySelectedYear, entries());
             listContainer.innerHTML = '';
             const p = PLATFORMS[activePlatform];
-            if (entries().length === 0) {
-                listContainer.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 text-center text-slate-500"><span class="text-3xl block mb-2">📭</span>Nu există date înregistrate pentru ${p.emoji} ${p.name} încă.</div>`;
+            const filteredEntries = entries().filter(entry => matchesTimeFilter(entry.date, historyFilterMode, historySelectedWeek, historySelectedMonth, historySelectedYear));
+            if (filteredEntries.length === 0) {
+                listContainer.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 text-center text-slate-500"><span class="text-3xl block mb-2">📭</span>Nu există date înregistrate pentru filtrul selectat în ${p.emoji} ${p.name}.</div>`;
                 return;
             }
             const grouped = {};
-            entries().forEach(entry => {
+            filteredEntries.forEach(entry => {
                 const info = getWeekLabelAndId(entry.date);
                 if (!grouped[info.id]) grouped[info.id] = { label: info.label, range: info.range, items: [], fuel: 0, bus: 0, food: 0, others: 0, revenue: 0, tipsApp: 0, tipsCash: 0, deliveries: 0, distance: 0 };
                 grouped[info.id].items.push(entry);
@@ -975,32 +1210,43 @@
                     const dayNum = d.getDate();
                     const formattedDate = d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long' });
                     const dailyTipCash = item.tipCash || 0;
-                    const reconciliationHtml = '';
                     const baseRev = Math.max(0, item.revenue - (item.tipApp || 0));
                     const dayTaxes = item.revenue*(taxSettings.stat/100) + baseRev*(taxSettings.fleet/100) + baseRev*(taxSettings.app/100);
                     const dayExpenses = (item.expenses.fuel||0)+(item.expenses.bus||0)+(item.expenses.food||0)+(item.expenses.others||0);
                     const dayProfit = (item.revenue + dailyTipCash) - dayTaxes - dayExpenses;
+                    const expenseItems = [
+                        ['Benzină', item.expenses.fuel || 0],
+                        ['Autobuz', item.expenses.bus || 0],
+                        ['Mâncare', item.expenses.food || 0],
+                        ['Altele', item.expenses.others || 0]
+                    ].filter(([, value]) => value > 0);
+                    const detailChips = [
+                        `<span class="text-[10px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">📦 ${item.deliveries} livrări</span>`,
+                        `<span class="text-[10px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">📍 ${(item.distance||0).toFixed(2)} km</span>`,
+                        `<span class="text-[10px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">💰 Brut ${(item.revenue + (item.tipApp||0)).toFixed(2)} lei</span>`,
+                        `<span class="text-[10px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">💚 Tips ${((item.tipApp||0) + dailyTipCash).toFixed(2)} lei</span>`
+                    ];
                     return `
-                        <div class="p-4 bg-slate-900/40 hover:bg-slate-850/20 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div class="flex items-start gap-3">
-                                <div class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center">
+                        <div class="p-4 bg-slate-900/40 hover:bg-slate-850/20 transition flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                            <div class="flex items-start gap-3 flex-1">
+                                <div class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center shrink-0">
                                     <span class="text-[9px] uppercase text-slate-500 font-bold">${dayName.substring(0,3)}</span>
                                     <span class="text-md font-black text-slate-200 -mt-1">${dayNum}</span>
                                 </div>
-                                <div>
+                                <div class="min-w-0">
                                     <h4 class="font-bold text-slate-200 capitalize text-sm">${dayName} <span class="text-xs font-normal text-slate-500">(${formattedDate})</span></h4>
-                                    <p class="text-xs text-slate-400">${item.deliveries} livrări | Brut: ${(item.revenue + (item.tipApp||0)).toFixed(2)} lei | 📍 ${(item.distance||0).toFixed(2)} km</p>
-                                    <div class="flex flex-wrap gap-1.5 mt-1">
-                                        ${reconciliationHtml}
-                                        ${item.notes ? `<span class="text-[9px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded-full max-w-xs truncate">📝 ${item.notes}</span>` : ''}
+                                    <div class="flex flex-wrap gap-1.5 mt-2">
+                                        ${detailChips.join('')}
                                     </div>
+                                    ${expenseItems.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${expenseItems.map(([label, value]) => `<span class="text-[10px] text-rose-300 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">${label}: ${value.toFixed(2)} lei</span>`).join('')}</div>` : ''}
+                                    ${item.notes ? `<div class="mt-2 text-[11px] text-slate-400 bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800 max-w-xl">📝 ${item.notes}</div>` : ''}
                                 </div>
                             </div>
-                            <div class="flex flex-wrap md:flex-nowrap items-center gap-4 text-xs justify-between md:justify-end border-t border-slate-800 md:border-0 pt-3 md:pt-0 w-full md:w-auto">
-                                <div class="text-left md:text-right min-w-[80px]"><p class="text-[10px] text-slate-500 uppercase">Cheltuieli</p><p class="font-bold text-rose-400">${dayExpenses > 0 ? `-${dayExpenses.toFixed(2)} lei` : '0.00'}</p></div>
-                                <div class="text-left md:text-right border-l border-slate-850 pl-4 min-w-[90px]"><p class="text-[10px] text-slate-500 uppercase">Bacșiș</p><p class="font-bold text-emerald-400">${((item.tipApp||0) + dailyTipCash) > 0 ? `+${((item.tipApp||0) + dailyTipCash).toFixed(2)} lei` : '0.00'}</p></div>
-                                <div class="text-left md:text-right border-l border-slate-850 pl-4 min-w-[110px]"><p class="text-[10px] text-slate-500 uppercase font-extrabold">Profit Curat</p><p class="font-black text-emerald-400 text-sm">${dayProfit > 0 ? `+${dayProfit.toFixed(2)} lei` : `${dayProfit.toFixed(2)} lei`}</p></div>
-                                <div class="flex gap-1 border-l border-slate-850 pl-4">
+                            <div class="flex flex-wrap lg:flex-nowrap items-center gap-3 text-xs justify-between lg:justify-end border-t border-slate-800 lg:border-0 pt-3 lg:pt-0 w-full lg:w-auto">
+                                <div class="text-left lg:text-right min-w-[78px]"><p class="text-[10px] text-slate-500 uppercase">Cheltuieli</p><p class="font-bold text-rose-400">${dayExpenses > 0 ? `-${dayExpenses.toFixed(2)} lei` : '0.00'}</p></div>
+                                <div class="text-left lg:text-right border-l border-slate-850 pl-3 min-w-[90px]"><p class="text-[10px] text-slate-500 uppercase">Taxe</p><p class="font-bold text-slate-300">-${dayTaxes.toFixed(2)} lei</p></div>
+                                <div class="text-left lg:text-right border-l border-slate-850 pl-3 min-w-[110px]"><p class="text-[10px] text-slate-500 uppercase font-extrabold">Profit Curat</p><p class="font-black text-emerald-400 text-sm">${dayProfit > 0 ? `+${dayProfit.toFixed(2)} lei` : `${dayProfit.toFixed(2)} lei`}</p></div>
+                                <div class="flex gap-1 border-l border-slate-850 pl-3">
                                     <button onclick="editDayEntry('${item.date}')" class="p-2 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Editează">✏️</button>
                                     <button onclick="deleteDayEntry('${item.date}')" class="p-2 text-rose-500/60 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition cursor-pointer" title="Șterge">🗑️</button>
                                 </div>
@@ -1013,15 +1259,16 @@
                         <div>
                             <h3 class="font-black text-slate-100">${week.label} <span class="text-xs font-normal text-emerald-400">${p.emoji} ${p.name}</span></h3>
                             <p class="text-xs text-slate-400">${week.range}</p>
-                            <div class="flex gap-2.5 mt-2 text-[10px]">
+                            <div class="flex flex-wrap gap-2.5 mt-2 text-[10px]">
                                 <span class="bg-slate-950 text-slate-300 px-2.5 py-1 rounded-full border border-slate-800/80 font-semibold">📦 ${week.deliveries} livrări</span>
                                 <span class="bg-slate-950 text-slate-300 px-2.5 py-1 rounded-full border border-slate-800/80 font-semibold">📍 ${week.distance.toFixed(2)} km</span>
+                                <span class="bg-slate-950 text-slate-300 px-2.5 py-1 rounded-full border border-slate-800/80 font-semibold">💚 Tips ${week.tipsApp.toFixed(2)} + ${week.tipsCash.toFixed(2)} lei</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-4 text-xs">
+                        <div class="flex flex-wrap items-center gap-3 text-xs">
                             <div class="text-right"><span class="text-[10px] text-slate-500 block uppercase">Profit Curat</span><span class="font-black text-emerald-400 text-sm">+${netProfit.toFixed(2)} lei</span></div>
-                            <div class="text-right border-l border-slate-800 pl-4"><span class="text-[10px] text-slate-500 block uppercase">Venit Brut</span><span class="font-bold text-slate-300">${(week.revenue + week.tipsApp).toFixed(2)} lei</span></div>
-                            <div class="text-right border-l border-slate-800 pl-4"><span class="text-[10px] text-slate-500 block uppercase">Cheltuieli</span><span class="font-bold text-rose-400">-${totalExp.toFixed(2)} lei</span></div>
+                            <div class="text-right border-l border-slate-800 pl-3"><span class="text-[10px] text-slate-500 block uppercase">Venit Brut</span><span class="font-bold text-slate-300">${(week.revenue + week.tipsApp).toFixed(2)} lei</span></div>
+                            <div class="text-right border-l border-slate-800 pl-3"><span class="text-[10px] text-slate-500 block uppercase">Cheltuieli</span><span class="font-bold text-rose-400">-${totalExp.toFixed(2)} lei</span></div>
                         </div>
                     </div>
                     <div class="divide-y divide-slate-800/50">${dayRows}</div>`;
@@ -1146,6 +1393,25 @@
         // ===== CASH APP PERSISTENCE (localStorage backup) =====
         const CA_STORAGE_KEY = 'george_caData_v1';
 
+        function normalizeCaDataShape(data) {
+            const normalized = { bolt: {}, wolt: {}, glovo: {} };
+            ['bolt', 'wolt', 'glovo'].forEach(plat => {
+                const source = data && data[plat] && typeof data[plat] === 'object' ? data[plat] : {};
+                normalized[plat] = {};
+                Object.keys(source).forEach(dateKey => {
+                    const day = source[dateKey];
+                    if (day && typeof day === 'object') {
+                        normalized[plat][dateKey] = {
+                            tranzactii: Array.isArray(day.tranzactii) ? day.tranzactii : [],
+                            soldApp: Number(day.soldApp) || 0,
+                            soldMeu: Number(day.soldMeu) || 0
+                        };
+                    }
+                });
+            });
+            return normalized;
+        }
+
         function saveCaLocal() {
             try {
                 localStorage.setItem(CA_STORAGE_KEY, JSON.stringify(caData));
@@ -1157,11 +1423,9 @@
                 const raw = localStorage.getItem(CA_STORAGE_KEY);
                 if (raw) {
                     const parsed = JSON.parse(raw);
-                    // Merge local data into caData (Firebase overrides when available)
+                    const normalized = normalizeCaDataShape(parsed);
                     ['bolt', 'wolt', 'glovo'].forEach(plat => {
-                        if (parsed[plat]) {
-                            caData[plat] = Object.assign({}, parsed[plat], caData[plat]);
-                        }
+                        caData[plat] = normalized[plat];
                     });
                 }
             } catch(e) { /* ignore */ }
@@ -1170,6 +1434,8 @@
         function initCashApp() {
             // Load from localStorage first (instant, before Firebase)
             loadCaLocal();
+            const filterSelect = document.getElementById('cash-filter-select');
+            if (filterSelect) filterSelect.value = cashAppFilterMode;
             const todayStr = getTodayDateString();
             const d = new Date(todayStr);
             const formatted = d.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1179,9 +1445,8 @@
             updateCaSolduri();
         }
 
-        function getCaToday() {
+        function getCaToday(plat = activePlatform) {
             const todayStr = getTodayDateString();
-            const plat = activePlatform;
             if (!caData[plat]) caData[plat] = {};
             if (!caData[plat][todayStr]) {
                 caData[plat][todayStr] = { tranzactii: [], soldApp: 0, soldMeu: 0 };
@@ -1189,9 +1454,10 @@
             return caData[plat][todayStr];
         }
 
-        function saveCaToFirebase() {
+        function saveCaToFirebase(plat = activePlatform) {
             if (!window._fbSet) return;
-            window._fbSet(`george/${activePlatform}/caData`, caData[activePlatform]);
+            if (!caData[plat]) caData[plat] = {};
+            window._fbSet(`george/${plat}/caData`, caData[plat]);
             // Also save to localStorage as backup
             saveCaLocal();
         }
@@ -1226,7 +1492,7 @@
         }
 
         function addCaTranzactie(tip) {
-            const todayData = getCaToday();
+            const todayData = getCaToday(activePlatform);
             let suma = 0;
             let label = '';
             let color = '';
@@ -1283,7 +1549,7 @@
                 color
             });
 
-            saveCaToFirebase();
+            saveCaToFirebase(activePlatform);
             renderCaIstoric();
             updateCaSolduri();
             if (bacsisCash > 0) {
@@ -1316,51 +1582,62 @@
             if (caData[activePlatform]) {
                 delete caData[activePlatform][todayStr];
             }
-            saveCaToFirebase();
+            saveCaToFirebase(activePlatform);
             renderCaIstoric();
             updateCaSolduri();
             showToast('Tranzacțiile zilei au fost resetate.');
         }
 
         function updateCaSolduri() {
-            const todayData = getCaToday();
-            const soldApp = todayData.soldApp || 0;
-
-            document.getElementById('ca-sold-app').innerText = `${Math.max(0, soldApp).toFixed(2)} lei`;
-            // "Cash al Tău" card - arată bacșișurile acumulate azi
+            const selectedDates = Object.keys(caData[activePlatform] || {}).filter(dateKey => matchesTimeFilter(dateKey, cashAppFilterMode, cashSelectedWeek, cashSelectedMonth, cashSelectedYear));
             let totalPrimit = 0, totalPlatit = 0, totalDepus = 0, totalBacsisuri = 0;
-            (todayData.tranzactii || []).forEach(t => {
-                if (t.tip === 'primit') {
-                    totalPrimit += t.suma;
-                    totalBacsisuri += (t.bacsisCash || 0);
-                } else if (t.tip === 'platit') {
-                    totalPlatit += t.suma;
-                } else if (t.tip === 'depus') {
-                    totalDepus += t.suma;
-                }
+            selectedDates.forEach(dateKey => {
+                const dayData = caData[activePlatform][dateKey] || { tranzactii: [] };
+                (dayData.tranzactii || []).forEach(t => {
+                    if (t.tip === 'primit') {
+                        totalPrimit += t.suma;
+                        totalBacsisuri += (t.bacsisCash || 0);
+                    } else if (t.tip === 'platit') {
+                        totalPlatit += t.suma;
+                    } else if (t.tip === 'depus') {
+                        totalDepus += t.suma;
+                    }
+                });
             });
 
+            const deReturnat = Math.max(0, totalPrimit - totalPlatit - totalDepus);
+            document.getElementById('ca-sold-app').innerText = `${Math.max(0, deReturnat).toFixed(2)} lei`;
             document.getElementById('ca-sold-meu').innerText = `${totalBacsisuri.toFixed(2)} lei`;
             document.getElementById('ca-total-primit').innerText = `${totalPrimit.toFixed(2)} lei`;
             document.getElementById('ca-total-platit').innerText = `${totalPlatit.toFixed(2)} lei`;
             document.getElementById('ca-total-depus').innerText = `${totalDepus.toFixed(2)} lei`;
             const elBacsisuri = document.getElementById('ca-total-bacsisuri');
             if (elBacsisuri) elBacsisuri.innerText = `${totalBacsisuri.toFixed(2)} lei`;
-
-            const deReturnat = totalPrimit - totalPlatit - totalDepus;
-            document.getElementById('ca-de-returnat').innerText = `${Math.max(0, deReturnat).toFixed(2)} lei`;
-            // Update dashboard too
+            document.getElementById('ca-de-returnat').innerText = `${deReturnat.toFixed(2)} lei`;
             updateDashCashApp();
         }
 
         function renderCaIstoric() {
-            const todayData = getCaToday();
+            const filterSelect = document.getElementById('cash-filter-select');
+            if (filterSelect) {
+                cashAppFilterMode = filterSelect.value;
+            }
+            populateMonthFilterOptions('cash-month-select', cashSelectedMonth, Object.keys(caData[activePlatform] || {}), date => date);
+            populateYearFilterOptions('cash-year-select', cashSelectedYear, Object.keys(caData[activePlatform] || {}), date => date);
             const list = document.getElementById('ca-istoric-list');
             if (!list) return;
 
-            const tranzactii = todayData.tranzactii || [];
+            const allDates = Object.keys(caData[activePlatform] || {}).filter(dateKey => matchesTimeFilter(dateKey, cashAppFilterMode, cashSelectedWeek, cashSelectedMonth, cashSelectedYear)).sort((a, b) => new Date(b) - new Date(a));
+            const tranzactii = [];
+            allDates.forEach(dateKey => {
+                const dayData = caData[activePlatform][dateKey] || { tranzactii: [] };
+                (dayData.tranzactii || []).forEach((t, dayIndex) => {
+                    tranzactii.push({ ...t, dateKey, dayIndex, dateLabel: new Date(dateKey).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' }) });
+                });
+            });
+
             if (tranzactii.length === 0) {
-                list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Nicio tranzacție înregistrată azi.</p>';
+                list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Nicio tranzacție înregistrată pentru filtrul selectat.</p>';
                 return;
             }
 
@@ -1370,40 +1647,63 @@
                 blue: 'border-blue-500/20 bg-blue-500/5 text-blue-300'
             };
 
-            list.innerHTML = [...tranzactii].map((t, origIdx) => {
-                // origIdx in reversed array = tranzactii.length - 1 - displayIdx
-                const realIdx = tranzactii.length - 1 - origIdx;
+            let totalPrimit = 0;
+            let totalPlatit = 0;
+            let totalDepus = 0;
+            let totalBacsisuri = 0;
+            tranzactii.forEach(t => {
+                if (t.tip === 'primit') {
+                    totalPrimit += t.suma;
+                    totalBacsisuri += t.bacsisCash || 0;
+                } else if (t.tip === 'platit') {
+                    totalPlatit += t.suma;
+                } else if (t.tip === 'depus') {
+                    totalDepus += t.suma;
+                }
+            });
+
+            const summaryHtml = `
+                <div class="mb-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-[11px] text-slate-300 flex flex-wrap gap-3">
+                    <span>Primit: <strong class="text-amber-300">${totalPrimit.toFixed(2)} lei</strong></span>
+                    <span>Plătit: <strong class="text-rose-300">${totalPlatit.toFixed(2)} lei</strong></span>
+                    <span>Depus: <strong class="text-blue-300">${totalDepus.toFixed(2)} lei</strong></span>
+                    <span>Bacșiș: <strong class="text-emerald-300">${totalBacsisuri.toFixed(2)} lei</strong></span>
+                </div>`;
+
+            list.innerHTML = summaryHtml + tranzactii.map((t, idx) => {
                 const tipBadge = t.bacsisCash > 0 
                     ? `<span class="ml-1.5 text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">+${t.bacsisCash.toFixed(2)} bacșiș</span>` 
                     : '';
                 return `<div class="flex items-center gap-2 p-3 rounded-xl border ${colors[t.color] || 'border-slate-700 bg-slate-950'} text-xs">
                     <div class="flex-1 min-w-0">
-                        <span>${t.label}</span>${tipBadge}
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span>${t.label}</span>
+                            <span class="text-[10px] text-slate-500">${t.dateLabel}</span>
+                            ${tipBadge}
+                        </div>
                     </div>
                     <span class="text-slate-500 shrink-0">${t.ora}</span>
-                    <button onclick="deleteCaTranzactie(${realIdx})" class="shrink-0 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg p-1.5 transition cursor-pointer" title="Șterge">✕</button>
+                    <button onclick="deleteCaTranzactie('${t.dateKey}', ${t.dayIndex})" class="shrink-0 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg p-1.5 transition cursor-pointer" title="Șterge">✕</button>
                 </div>`;
             }).reverse().join('');
         }
 
-        function deleteCaTranzactie(idx) {
-            const todayData = getCaToday();
-            const t = todayData.tranzactii[idx];
+        function deleteCaTranzactie(dateKey, idx) {
+            const dayData = (caData[activePlatform] && caData[activePlatform][dateKey]) || { tranzactii: [] };
+            const t = dayData.tranzactii[idx];
             if (!t) return;
             if (!confirm('Ștergi această tranzacție?')) return;
-            // Dacă tranzacția a adăugat bacșiș, îl scădem înapoi din entries
             if (t.tip === 'primit' && t.bacsisCash > 0) {
-                removeTipCashFromToday(t.bacsisCash);
+                removeTipCashFromToday(t.bacsisCash, dateKey);
             }
-            // Recalculează soldApp din tranzacții rămase
-            todayData.tranzactii.splice(idx, 1);
+            dayData.tranzactii.splice(idx, 1);
             let sold = 0;
-            todayData.tranzactii.forEach(tr => {
+            dayData.tranzactii.forEach(tr => {
                 if (tr.tip === 'primit') sold += tr.suma;
                 else if (tr.tip === 'platit' || tr.tip === 'depus') sold -= tr.suma;
             });
-            todayData.soldApp = sold;
-            saveCaToFirebase();
+            dayData.soldApp = sold;
+            saveCaToFirebase(activePlatform);
             saveCaLocal();
             renderCaIstoric();
             updateCaSolduri();
@@ -1411,11 +1711,11 @@
             showToast('Tranzacție ștearsă.');
         }
 
-        function removeTipCashFromToday(amount) {
-            const todayStr = getTodayDateString();
+        function removeTipCashFromToday(amount, dateKey) {
             const platEntries = allEntries[activePlatform];
             if (!platEntries) return;
-            const existingIdx = platEntries.findIndex(e => e.date === todayStr);
+            const targetDate = dateKey || getTodayDateString();
+            const existingIdx = platEntries.findIndex(e => e.date === targetDate);
             if (existingIdx >= 0) {
                 platEntries[existingIdx].tipCash = parseFloat(Math.max(0, (platEntries[existingIdx].tipCash || 0) - amount).toFixed(2));
                 window._fbSet(`george/${activePlatform}/entries`, platEntries);
@@ -1460,10 +1760,44 @@
 
     <!-- PWA: Service Worker + Install Logic -->
     <script>
+        function forceRefreshPwa() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                    registrations.forEach((registration) => {
+                        registration.update();
+                        if (registration.waiting) {
+                            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+            }
+            localStorage.removeItem('george_tracker_entries_v2');
+            localStorage.removeItem('george_tracker_tax_settings_v2');
+            localStorage.removeItem('george_caData_v1');
+            caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+            setTimeout(() => window.location.reload(true), 1000);
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('./service-worker.js')
-                    .then(function(reg) { console.log('[PWA] SW înregistrat:', reg.scope); })
+                    .then(function(reg) {
+                        console.log('[PWA] SW înregistrat:', reg.scope);
+                        if (reg.waiting) {
+                            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        showToast('S-a găsit o actualizare. Reîncarc aplicația...');
+                                        window.location.reload();
+                                    }
+                                });
+                            }
+                        });
+                    })
                     .catch(function(err) { console.warn('[PWA] SW eșuat:', err); });
             });
         }

@@ -1,11 +1,12 @@
 // Service Worker - Delivery Tracker George PWA
 // Versiune cache - schimbă numărul când actualizezi aplicația
-const CACHE_NAME = 'delivery-tracker-v1';
+const CACHE_NAME = 'delivery-tracker-v2';
 
 // Fișiere de cache la instalare
 const FILES_TO_CACHE = [
   './delivery_tracker_george_html_toate_3.html',
-  './manifest.json'
+  './manifest.json',
+  './service-worker.js'
 ];
 
 // Instalare service worker
@@ -14,9 +15,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Cache deschis, adaug fișierele locale...');
-      // Cache doar fișierele locale (nu CDN-urile externe)
       return cache.addAll(FILES_TO_CACHE).catch((err) => {
-        console.warn('[SW] Cache parțial eșuat (normal pentru fișiere externe):', err);
+        console.warn('[SW] Cache parțial eșuat:', err);
       });
     })
   );
@@ -39,6 +39,12 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Intercept fetch - strategie: Network First, fallback la Cache
